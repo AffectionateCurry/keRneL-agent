@@ -1,6 +1,6 @@
 # GRPO Training for Kernel Optimization
 
-This repository contains implementation of Generalized Reward-Penalized Optimization (GRPO) for training language models to optimize CUDA kernels.
+
 
 ## Overview
 
@@ -123,3 +123,7 @@ Therefore:
 ## Output
 
 The final trained Qwen model is saved after completing `args.max_steps_train` GRPO update steps.
+
+<p align="center">
+  <img width="575" alt="image" src="https://github.com/user-attachments/assets/32793dee-c889-4f8d-be90-1999865d4fcc" />
+</p>
