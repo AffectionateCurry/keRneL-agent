@@ -1,1 +1,5 @@
 .env
+grpo_kernel_output/
+grpo_kernel_logs/
+results/
+runs/

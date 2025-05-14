@@ -9,9 +9,7 @@ import logging
 import argparse
 import os
 
-from kernelbench_grpo_env import KernelBenchGRPOEnv # TRL Wrapper
-# Assuming rl_kernel_env.py and gpt4o_coder.py are in the same src directory
-# and OPENAI_API_KEY is set in the environment.
+from kernelbench_grpo_env import KernelBenchGRPOEnv 
 
 logger = logging.getLogger(__name__)
 
