@@ -2,7 +2,7 @@
 from typing import Dict, List, Any, Callable, Optional
 import torch
 from transformers import PreTrainedModel, PreTrainedTokenizer
-from .rl_kernel_env import KernelBenchRLEnv  # Correct relative import
+from rl_kernel_env import KernelBenchRLEnv  # Correct relative import
 import logging
 
 logger = logging.getLogger(__name__)

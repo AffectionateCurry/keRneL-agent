@@ -17,7 +17,7 @@ from kernelbench.src.utils import set_gpu_arch, read_file
 # This requires kernelbench directory to be in PYTHONPATH for scripts to be found.
 from kernelbench.scripts.generate_baseline_time import measure_program_time
 
-from .coder import gpt4o_code_generator # Correct relative import
+from gemini.coder import gpt4o_code_generator # Correct relative import
 
 logger = logging.getLogger(__name__)
 

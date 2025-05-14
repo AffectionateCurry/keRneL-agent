@@ -1,20 +1,20 @@
 import torch
 import numpy as np
-from src.eval import (
+from kernelbench.src.eval import (
     load_original_model_and_inputs,
     time_execution_with_cuda_event,
     get_timing_stats,
     set_seed,
     fetch_ref_arch_from_problem_id,
 )
-from src.dataset import construct_problem_dataset_from_problem_dir
-from src.utils import read_file
+from kernelbench.src.dataset import construct_problem_dataset_from_problem_dir
+from kernelbench.src.utils import read_file
 import os
 import json
 from tqdm import tqdm
 
 """
-Generate baseline time for KernelBench
+Generate baseline time for Kernel.Bench
 This profiles the wall clock time for each KernelBench reference problem
 
 You can find a list of pre-generated baseline time in /results/timing/
