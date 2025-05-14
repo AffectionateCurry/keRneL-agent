@@ -125,5 +125,5 @@ Therefore:
 The final trained Qwen model is saved after completing `args.max_steps_train` GRPO update steps.
 
 <p align="center">
-  <img width="575" alt="image" src="https://github.com/user-attachments/assets/32793dee-c889-4f8d-be90-1999865d4fcc" />
+  <img width="575" alt="image" src="https://github.com/user-attachments/assets/4fb84877-a892-4f29-9f2e-45540a8630dd" />
 </p>
