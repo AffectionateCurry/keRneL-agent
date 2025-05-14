@@ -13,7 +13,7 @@ from kernelbench.src.eval import eval_kernel_against_ref, KernelExecResult
 from kernelbench.src.utils import set_gpu_arch, read_file
 from kernelbench.scripts.generate_baseline_time import measure_program_time
 
-from .coder import KernelCoder
+from claude.coder import KernelCoder
 
 
 class KernelBenchRLEnv(gym.Env):

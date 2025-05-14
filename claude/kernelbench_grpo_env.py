@@ -2,7 +2,7 @@ import torch
 from typing import Dict, List, Any, Optional
 from transformers import PreTrainedModel, PreTrainedTokenizer
 import modal
-from .rl_kernel_env import KernelBenchRLEnv
+from claude.rl_kernel_env import KernelBenchRLEnv
 
 
 class KernelBenchGRPOEnv:

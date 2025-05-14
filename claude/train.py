@@ -1,3 +1,4 @@
+import sys
 import argparse
 import json
 import logging
@@ -10,10 +11,9 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import GRPOConfig, GRPOTrainer, create_reference_model
 from datasets import Dataset
 
-from .kernelbench_grpo_env import KernelBenchGRPOEnv
-from .coder import KernelCoder
-from ..llm_finetuning.src.common import app, axolotl_image, VOLUME_CONFIG
-
+from claude.kernelbench_grpo_env import KernelBenchGRPOEnv
+from claude.coder import KernelCoder
+from llm_finetuning.src.common import app, VOLUME_CONFIG, axolotl_image
 
 logger = logging.getLogger(__name__)
 
@@ -21,18 +21,77 @@ logger = logging.getLogger(__name__)
 TRAINING_GPU_CONFIG = "a100:2"
 SINGLE_GPU_CONFIG = "a10g:1"
 
+# Create our own image with necessary dependencies
+grpo_image = (
+    axolotl_image
+    .pip_install(
+        "transformers==4.36.2",
+        "trl==0.7.4",
+        "datasets",
+        "torch",
+        "openai",
+        "gymnasium",
+    )
+)
+
 
 @app.function(
-    image=axolotl_image,
+    image=grpo_image,
     gpu=TRAINING_GPU_CONFIG,
     volumes=VOLUME_CONFIG,
     timeout=24 * 3600,
-    secret=modal.Secret.from_name("openai-api-key"),
 )
-def train_grpo(config: Dict[str, Any]):
+def train_grpo(
+    model_name: str = "Qwen/Qwen2-0.5B-Instruct",
+    gpt_model: str = "gpt-4o",
+    kernel_level: int = 1,
+    max_steps_per_episode: int = 4,
+    num_correct_trials: int = 5,
+    num_perf_trials: int = 100,
+    batch_size: int = 16,
+    mini_batch_size: int = 4,
+    gradient_accumulation_steps: int = 2,
+    ppo_epochs: int = 2,
+    learning_rate: float = 1e-5,
+    gamma: float = 0.4,
+    max_training_steps: int = 100,
+    save_steps: int = 20,
+    qwen_max_new_tokens: int = 256,
+    qwen_temperature: float = 0.7,
+    qwen_top_p: float = 0.9,
+    max_prompt_length: int = 1536,
+    output_dir: str = "/runs/grpo_kernel_output",
+    logging_dir: str = "/runs/grpo_kernel_logs",
+    deepspeed_config: str = None,
+):
     """Main GRPO training function for Modal."""
     
-    # Setup directories
+    # Create config from parameters
+    config = {
+        "model_name": model_name,
+        "gpt_model": gpt_model,
+        "kernel_level": kernel_level,
+        "max_steps_per_episode": max_steps_per_episode,
+        "num_correct_trials": num_correct_trials,
+        "num_perf_trials": num_perf_trials,
+        "batch_size": batch_size,
+        "mini_batch_size": mini_batch_size,
+        "gradient_accumulation_steps": gradient_accumulation_steps,
+        "ppo_epochs": ppo_epochs,
+        "learning_rate": learning_rate,
+        "gamma": gamma,
+        "max_training_steps": max_training_steps,
+        "save_steps": save_steps,
+        "qwen_max_new_tokens": qwen_max_new_tokens,
+        "qwen_temperature": qwen_temperature,
+        "qwen_top_p": qwen_top_p,
+        "max_prompt_length": max_prompt_length,
+        "output_dir": output_dir,
+        "logging_dir": logging_dir,
+        "deepspeed_config": deepspeed_config,
+    }
+    
+    # Setup directories  
     output_dir = Path(config["output_dir"])
     output_dir.mkdir(parents=True, exist_ok=True)
     
@@ -189,7 +248,7 @@ def train_grpo(config: Dict[str, Any]):
 
 
 @app.local_entrypoint()
-def main():
+def grpo_main():
     parser = argparse.ArgumentParser(description="Train Qwen for kernel optimization using GRPO")
     
     # Model configuration
@@ -241,4 +300,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    grpo_main()
