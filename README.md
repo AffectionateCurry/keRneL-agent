@@ -1,6 +1,6 @@
 # GRPO Training for Kernel Optimization
 <p align="center">
-  <img width="170" alt="image" src="https://github.com/user-attachments/assets/32793dee-c889-4f8d-be90-1999865d4fcc" />
+  <img width="460" alt="image" src="https://github.com/user-attachments/assets/32793dee-c889-4f8d-be90-1999865d4fcc" />
 </p>
 
 
