@@ -1,0 +1,54 @@
+# =========================================
+#  Qwen‑7B SFT with QLoRA (Axolotl ≥ v0.7.1)
+#  Fixes:  token_type_ids  •  dataset mapping
+# =========================================
+
+# ---------- Base model ----------
+base_model:  Qwen/Qwen2.5-0.5B                     # same weights you downloaded
+trust_remote_code: true
+sequence_len: 2048                              # fits Qwen rope limit
+load_in_4bit: true                              # QLoRA default
+flash_attention: true                           # FA‑2 works with Qwen 📚
+
+# ---------- LoRA adapter ----------
+adapter: qlora
+lora_r: 32
+lora_alpha: 16
+lora_dropout: 0.05
+lora_target_linear: true
+lora_modules_to_save:
+  - embed_tokens
+  - lm_head
+
+# ---------- Dataset ----------
+datasets:
+  - path: data.jsonl
+    ds_type: json
+    type: context_qa.load_v2                    # expects {context, question, answer}
+
+val_set_size: 0.05
+dataset_prepared_path: last_run_prepared        # matches your Modal volume
+output_dir: ./lora-out
+
+# ---------- Tokenizer quirks ----------
+tokenizer_return_token_type_ids: false          # avoids batch‑length crash :contentReference[oaicite:3]{index=3}
+pad_to_sequence_len: true                       # memory‑stable padding :contentReference[oaicite:4]{index=4}
+
+# ---------- Training ----------
+gradient_accumulation_steps: 4
+micro_batch_size: 2
+num_epochs: 4
+optimizer: adamw_bnb_8bit
+learning_rate: 2e-4
+lr_scheduler: cosine
+warmup_ratio: 0.1
+bf16: auto                                      # BF16 on A100; leave fp16 blank
+tf32: false
+gradient_checkpointing: false                  # QLoRA + 4‑bit usually fits
+
+# ---------- Logging / evaluation ----------
+logging_steps: 1
+eval_steps: 0                                   # skip mid‑epoch eval if dataset tiny
+saves_per_epoch: 1
+seed: 42
+strict: false
