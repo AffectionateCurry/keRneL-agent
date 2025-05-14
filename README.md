@@ -1,9 +1,4 @@
 # GRPO Training for Kernel Optimization
-<p align="center">
-  <img width="460" alt="image" src="https://github.com/user-attachments/assets/32793dee-c889-4f8d-be90-1999865d4fcc" />
-</p>
-
-
 
 
 
@@ -128,3 +123,7 @@ Therefore:
 ## Output
 
 The final trained Qwen model is saved after completing `args.max_steps_train` GRPO update steps.
+
+<p align="center">
+  <img width="460" alt="image" src="https://github.com/user-attachments/assets/32793dee-c889-4f8d-be90-1999865d4fcc" />
+</p>
