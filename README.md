@@ -1,6 +1,4 @@
-<img width="703" alt="image" src="https://github.com/user-attachments/assets/a50be76c-f2c9-4571-ad62-59b98e082331" /># GRPO Training for Kernel Optimization
-
-This repository contains implementation of Generalized Reward-Penalized Optimization (GRPO) for training language models to optimize CUDA kernels.
+# GRPO Training for Kernel Optimization
 
 <img width="703" alt="image" src="https://github.com/user-attachments/assets/32793dee-c889-4f8d-be90-1999865d4fcc" />
 
