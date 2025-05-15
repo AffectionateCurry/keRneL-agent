@@ -19,7 +19,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import GRPOConfig, GRPOTrainer, create_reference_model
 from datasets import Dataset
 
-from kernel_grpo_env import KernelBenchGRPOEnv
+from gemini.kernel_grpo_env import KernelBenchGRPOEnv # Corrected: Relative to gemini package
 
 # Logger
 logging.basicConfig(

@@ -8,16 +8,16 @@ from typing import List, Tuple, Dict, Any, Callable, Optional
 import hashlib # Added import
 import logging
 
-# Corrected imports assuming kernelbench is installed and /src is part of PYTHONPATH
-from kernelbench.src.dataset import construct_kernelbench_dataset, KERNEL_BENCH_PATH
-from kernelbench.src.eval import eval_kernel_against_ref, KernelExecResult
-# get_timing_stats is used by measure_program_time, not directly here.
-from kernelbench.src.utils import set_gpu_arch, read_file
-# Importing from scripts is not ideal but necessary if kernelbench is not modified.
-# This requires kernelbench directory to be in PYTHONPATH for scripts to be found.
+# kernelbench.src modules are imported as 'src' due to kernelbench/setup.py
+from src.dataset import construct_kernelbench_dataset, KERNEL_BENCH_PATH
+from src.eval import eval_kernel_against_ref, KernelExecResult
+from src.utils import set_gpu_arch, read_file
+
+# This import relies on kernelbench/ and kernelbench/scripts/ having __init__.py files
+# And kernelbench directory being on PYTHONPATH (which /app is in Modal)
 from kernelbench.scripts.generate_baseline_time import measure_program_time
 
-from gemini.coder import gpt4o_code_generator # Correct relative import
+from .coder import gpt4o_code_generator # Corrected: Relative import for sibling module
 
 logger = logging.getLogger(__name__)
 
