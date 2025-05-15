@@ -25,14 +25,26 @@ SINGLE_GPU_CONFIG = "a10g:1"
 grpo_image = (
     axolotl_image
     .pip_install(
-        "transformers==4.36.2",
-        "trl==0.7.4",
+        "transformers",
+        "trl>=0.17.0",
         "datasets",
-        "torch",
+        "torch==2.5.0",
         "openai",
         "gymnasium",
+        "together",
+        "google-generativeai",
+        "pytest",
+        "ninja",
+        "utils",
+        "python-dotenv",
+        "tqdm",
+        "anthropic",
+        "numpy",
+        "packaging",
+        "pydra_config",
+        "deepspeed==0.14.4"
     )
-)
+) 
 
 
 @app.function(
@@ -248,55 +260,21 @@ def train_grpo(
 
 
 @app.local_entrypoint()
-def grpo_main():
-    parser = argparse.ArgumentParser(description="Train Qwen for kernel optimization using GRPO")
-    
-    # Model configuration
-    parser.add_argument("--model_name", type=str, default="Qwen/Qwen2-0.5B-Instruct")
-    parser.add_argument("--gpt_model", type=str, default="gpt-4o")
-    
-    # Environment configuration
-    parser.add_argument("--kernel_level", type=int, default=1)
-    parser.add_argument("--max_steps_per_episode", type=int, default=4)
-    parser.add_argument("--num_correct_trials", type=int, default=5)
-    parser.add_argument("--num_perf_trials", type=int, default=100)
-    
-    # Training configuration
-    parser.add_argument("--batch_size", type=int, default=16)
-    parser.add_argument("--mini_batch_size", type=int, default=4)
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=2)
-    parser.add_argument("--ppo_epochs", type=int, default=2)
-    parser.add_argument("--learning_rate", type=float, default=1e-5)
-    parser.add_argument("--gamma", type=float, default=0.4)
-    parser.add_argument("--max_training_steps", type=int, default=100)
-    parser.add_argument("--save_steps", type=int, default=20)
-    
-    # Generation configuration
-    parser.add_argument("--qwen_max_new_tokens", type=int, default=256)
-    parser.add_argument("--qwen_temperature", type=float, default=0.7)
-    parser.add_argument("--qwen_top_p", type=float, default=0.9)
-    parser.add_argument("--max_prompt_length", type=int, default=1536)
-    
-    # Directory configuration
-    parser.add_argument("--output_dir", type=str, default="/runs/grpo_kernel_output")
-    parser.add_argument("--logging_dir", type=str, default="/runs/grpo_kernel_logs")
-    
-    # Optional configuration
-    parser.add_argument("--deepspeed_config", type=str, default=None)
-    
-    args = parser.parse_args()
-    
-    # Convert args to config dict
-    config = vars(args)
-    
-    # Setup logging
+def grpo_main(
+    model_name: str = "Qwen/Qwen2-0.5B-Instruct",
+    gpt_model: str = "gpt-4o",
+    kernel_level: int = 1,
+    max_training_steps: int = 100,
+    batch_size: int = 8,
+    save_steps: int = 20,
+):  
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    
-    # Launch training on Modal
-    train_grpo.remote(config)
+
+    config = locals() 
+    train_grpo.remote(**config)
 
 
 if __name__ == "__main__":
