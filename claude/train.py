@@ -5,6 +5,7 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Any
 import modal
+import os
 
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -13,7 +14,7 @@ from datasets import Dataset
 
 from claude.kernelbench_grpo_env import KernelBenchGRPOEnv
 from claude.coder import KernelCoder
-from llm_finetuning.src.common import app, VOLUME_CONFIG, axolotl_image
+# from llm_finetuning.src.common import app, VOLUME_CONFIG, axolotl_image
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +22,12 @@ logger = logging.getLogger(__name__)
 TRAINING_GPU_CONFIG = "a100:2"
 SINGLE_GPU_CONFIG = "a10g:1"
 
+APP_NAME = "example-axolotl"
+ALLOW_WANDB = os.environ.get("ALLOW_WANDB", "false").lower() == "true"
+
+
 # Create our own image with necessary dependencies
-grpo_image = (
+""" grpo_image = (
     axolotl_image
     .pip_install(
         "transformers",
@@ -44,7 +49,102 @@ grpo_image = (
         "pydra_config",
         "deepspeed==0.14.4"
     )
-) 
+)  """
+
+cuda_version = "12.4.0" # For torch 2.5.0, CUDA 12.1+ is typical. 12.4 is very new.
+                         # Consider CUDA 12.1 or 12.2 for broader compatibility if 12.4 causes issues.
+                         # PyTorch 2.5 official binaries are built with CUDA 11.8 and 12.1.
+                         # Using a newer CUDA in the image (12.4) should generally be fine with torch 2.5 built for 12.1.
+flavor = "devel"
+operating_sys = "ubuntu22.04"
+base_cuda_tag = f"{cuda_version}-{flavor}-{operating_sys}"
+
+# --- Define the combined image ---
+grpo_image = (
+    modal.Image.from_registry(f"nvidia/cuda:{base_cuda_tag}", add_python="3.10")
+    .apt_install(
+        "git",
+        "gcc-10",  # For C++ compilation
+        "g++-10",  # For C++ compilation
+        "clang",   # Often useful for some C++ tools or linters
+        "ninja-build" # For PyTorch C++ extensions (like apex, or custom CUDA kernels in kernelbench)
+    )
+    .pip_install(
+        # --- KernelBench Dependencies (from your original image) ---
+        "anthropic",
+        "numpy",        # Pin to a specific version if you encounter issues
+        "openai",
+        "packaging",
+        "pydra_config",
+        "torch==2.5.0", # Your chosen torch version
+        "tqdm",
+        "datasets",     # Pin to a version compatible with transformers/trl
+        "transformers", # Pin to a version compatible with torch 2.5.0 and trl
+        "google-generativeai",
+        "together",
+        "pytest",       # Optional for runtime, good for dev/testing image builds
+        "ninja",        # PyPI ninja, distinct from apt ninja-build. Both can be useful.
+                        # torch.utils.cpp_extension uses the one it finds.
+        # "utils",      # Make sure this is the intended PyPI package, or if it's a local module, handle it via .add_local_...
+        "python-dotenv",
+
+        # --- GRPO Fine-tuning Dependencies (inspired by axolotl & TRL needs) ---
+        "trl>=0.8.0", # TRL 0.8.0+ is generally compatible with newer transformers/torch. Pin more specifically if needed.
+                       # Example: "trl==0.8.6"
+        "accelerate>=0.29.0", # Choose a version compatible with your torch/transformers
+                             # Example: "accelerate==0.29.3"
+        "deepspeed==0.14.4", # Your pinned version, seems reasonable for torch 2.5.0
+        "huggingface_hub>=0.20.0", # For model hub interactions
+        "hf-transfer",         # For faster HF downloads
+        "wandb",               # If you use it for logging
+        "gymnasium",           # For KernelBenchRLEnv
+        "peft>=0.10.0",        # Often a dependency for TRL/Axolotl for LoRA etc.
+                              # Example: "peft==0.10.0"
+        # Ensure all versions are compatible. A good starting point:
+        # "torch==2.5.0", (already there)
+        # "transformers==4.41.2", # Latest as of checking, good for torch 2.5
+        # "datasets==2.19.2",
+        # "accelerate==0.31.0",
+        # "peft==0.11.1",
+        # "trl==0.9.4",
+        # "deepspeed==0.14.4", (already there)
+    )
+    # Set environment variables (similar to axolotl_image)
+    .env(
+        dict(
+            HUGGINGFACE_HUB_CACHE="/persistent_hf_cache", # Use a clean, volume-mounted path
+            HF_HUB_ENABLE_HF_TRANSFER="1",
+            TQDM_DISABLE="false", # Optional: disables tqdm progress bars in logs
+            # AXOLOTL_NCCL_TIMEOUT="60", # This was for Axolotl, may not be needed if not using Axolotl directly
+                                       # but can be kept if using accelerate/deepspeed with NCCL.
+        )
+    )
+    
+    # Clear default entrypoint from base CUDA image
+    .entrypoint([])
+)
+
+# --- Define Volume Configuration (can be in the same file or imported) ---
+# This should be THE place where volumes are defined if this image is central.
+# Ensure the cache path matches HUGGINGFACE_HUB_CACHE env var.
+VOLUME_CONFIG = {
+    "/persistent_hf_cache": modal.Volume.from_name(
+        "kernel-agent-shared-hf-cache", create_if_missing=True
+    ),
+    "/runs": modal.Volume.from_name(
+        "kernel-agent-shared-runs", create_if_missing=True
+    ),
+}
+
+
+app = modal.App(
+    APP_NAME,
+    secrets=[
+        modal.Secret.from_name("my-huggingface-secret"),
+        modal.Secret.from_dict({"ALLOW_WANDB": os.environ.get("ALLOW_WANDB", "false")}),
+        *([modal.Secret.from_name("wandb")] if ALLOW_WANDB else []),
+    ],
+)
 
 
 @app.function(

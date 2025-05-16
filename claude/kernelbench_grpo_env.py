@@ -39,7 +39,7 @@ Provide a concise optimization suggestion for kernel B:""",
             kernel_b_src=observation["kernel_b_src"],
             last_suggestion=observation["last_suggestion"]
         )
-    
+
     @modal.method()
     def generate_trajectory(
         self,
@@ -112,6 +112,7 @@ Provide a concise optimization suggestion for kernel B:""",
             "final_speedup": info.get("speedup", 0.0)
         }
 
+    @modal.method()
     def batch_generate_trajectories(
         self,
         agent_model: PreTrainedModel,

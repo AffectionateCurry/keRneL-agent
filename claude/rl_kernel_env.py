@@ -15,7 +15,6 @@ from kernelbench.scripts.generate_baseline_time import measure_program_time
 
 from claude.coder import KernelCoder
 
-
 class KernelBenchRLEnv(gym.Env):
     """RL Environment for KernelBench optimization with Modal GPU support."""
     
