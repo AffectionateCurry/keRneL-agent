@@ -141,6 +141,7 @@ app = modal.App(
     APP_NAME,
     secrets=[
         modal.Secret.from_name("my-huggingface-secret"),
+        modal.Secret.from_name("my-openai-secret"),
         modal.Secret.from_dict({"ALLOW_WANDB": os.environ.get("ALLOW_WANDB", "false")}),
         *([modal.Secret.from_name("wandb")] if ALLOW_WANDB else []),
     ],
@@ -180,12 +181,16 @@ def train_grpo(
     
     # Create config from parameters
     config = {
+
+        # kernelbench + wrapper parameters
         "model_name": model_name,
         "gpt_model": gpt_model,
         "kernel_level": kernel_level,
         "max_steps_per_episode": max_steps_per_episode,
         "num_correct_trials": num_correct_trials,
         "num_perf_trials": num_perf_trials,
+
+        # training parameters
         "batch_size": batch_size,
         "mini_batch_size": mini_batch_size,
         "gradient_accumulation_steps": gradient_accumulation_steps,
@@ -194,9 +199,12 @@ def train_grpo(
         "gamma": gamma,
         "max_training_steps": max_training_steps,
         "save_steps": save_steps,
+
+        # qwen parameters
         "qwen_max_new_tokens": qwen_max_new_tokens,
         "qwen_temperature": qwen_temperature,
         "qwen_top_p": qwen_top_p,
+
         "max_prompt_length": max_prompt_length,
         "output_dir": output_dir,
         "logging_dir": logging_dir,
@@ -253,29 +261,41 @@ def train_grpo(
     
     # GRPO configuration
     grpo_config = GRPOConfig(
-        model_name=config["model_name"],
+        #model_name=config["model_name"],
+        #adam_beta1=0.9,
+        #adam_beta2=0.99,
+        #weight_decay=0.1,
+        #warmup_ratio=0.01,
+        #lr_scheduler_type="cosine",
+        #optim="paged_adamw_8bit",
         output_dir=str(output_dir),
         logging_dir=str(logging_dir),
-        batch_size=config["batch_size"],
-        mini_batch_size=config["mini_batch_size"],
+        per_device_train_batch_size=config["batch_size"],
+        #mini_batch_size=config["mini_batch_size"],
         gradient_accumulation_steps=config["gradient_accumulation_steps"],
-        ppo_epochs=config["ppo_epochs"],
+        num_train_epochs=config["ppo_epochs"],
         learning_rate=config["learning_rate"],
-        gamma=config["gamma"],
+        #gamma=config["gamma"],
+        beta=0.04,
         max_steps=config["max_training_steps"],
         save_steps=config["save_steps"],
         logging_steps=1,
         fp16=torch.cuda.is_available(),
         deepspeed=config.get("deepspeed_config"),
         remove_unused_columns=False,
+
+        temperature=config["qwen_temperature"],         # This is a GRPOConfig param for generation
+        top_p=config["qwen_top_p"],                     # This is a GRPOConfig param for generation
+        max_completion_length=config["qwen_max_new_tokens"], # This is a GRPOConfig param
     )
     
     # Initialize trainer
     trainer = GRPOTrainer(
         model=model,
-        ref_model=ref_model,
-        config=grpo_config,
-        tokenizer=tokenizer,
+        # ref_model=ref_model,
+        args=grpo_config,
+        processing_class=tokenizer,
+
     )
     
     # Training loop
