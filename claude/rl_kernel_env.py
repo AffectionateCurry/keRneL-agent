@@ -8,10 +8,10 @@ from typing import List, Tuple, Dict, Any, Optional
 from pathlib import Path
 import modal
 
-from kernelbench.src.dataset import construct_kernelbench_dataset
-from kernelbench.src.eval import eval_kernel_against_ref, KernelExecResult
-from kernelbench.src.utils import set_gpu_arch, read_file
-from kernelbench.scripts.generate_baseline_time import measure_program_time
+from KernelBench.src.dataset import construct_kernelbench_dataset
+from KernelBench.src.eval import eval_kernel_against_ref, KernelExecResult
+from KernelBench.src.utils import set_gpu_arch, read_file
+from KernelBench.scripts.generate_baseline_time import measure_program_time
 
 from claude.coder import KernelCoder
 
