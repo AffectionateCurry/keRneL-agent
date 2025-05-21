@@ -148,6 +148,7 @@ app = modal.App(
 )
 
 
+
 @app.function(
     image=grpo_image,
     gpu=TRAINING_GPU_CONFIG,
@@ -289,12 +290,35 @@ def train_grpo(
         max_completion_length=config["qwen_max_new_tokens"], # This is a GRPOConfig param
     )
     
+
+    def reward_passthrough(prompts, completions, reward, **kwargs):
+        """
+        This function is called by GRPOTrainer.
+        'prompts' and 'completions' are generated/passed by the trainer.
+        'reward' (and other columns from your step_dataset) comes from **kwargs.
+        We simply return the pre-computed 'reward' values.
+        """
+        # 'reward' will be a list or tensor of rewards, one for each item in the batch.
+        # Ensure it's returned as a list of floats.
+        if isinstance(reward, torch.Tensor):
+            return reward.cpu().tolist() # Ensure it's a list of Python floats
+        elif isinstance(reward, list):
+            return [float(r) for r in reward]
+        else:
+            # Handle cases where 'reward' might be a single value if batch size is 1
+            # or raise an error if the format is unexpected.
+            # This depends on how Dataset.from_list packages single-item lists for columns.
+            # For safety, let's assume it's always a list.
+            raise TypeError(f"Expected 'reward' to be a list or tensor, got {type(reward)}")
+
+
     # Initialize trainer
     trainer = GRPOTrainer(
         model=model,
         # ref_model=ref_model,
         args=grpo_config,
         processing_class=tokenizer,
+        reward_funcs=[reward_passthrough]
 
     )
     
