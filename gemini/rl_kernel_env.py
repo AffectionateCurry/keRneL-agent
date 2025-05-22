@@ -15,7 +15,7 @@ from src.utils import set_gpu_arch, read_file
 
 # This import relies on kernelbench/ and kernelbench/scripts/ having __init__.py files
 # And kernelbench directory being on PYTHONPATH (which /app is in Modal)
-from kernelbench.scripts.generate_baseline_time import measure_program_time
+from KernelBench.scripts.generate_baseline_time import measure_program_time
 
 from .coder import gpt4o_code_generator # Corrected: Relative import for sibling module
 

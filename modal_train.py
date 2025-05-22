@@ -55,13 +55,14 @@ modal_image = (
           "python-dotenv",
           "accelerate",
           "peft",
+          "together",
           "packaging",
           "pyyaml", # For reading YAML configs
       )
       .copy_local_dir(local_path=".", remote_path="/app")
       .run_commands(
-          "cd /app/kernelbench && pip install -e .", # Install kernelbench from /app/kernelbench
-          "echo 'kernelbench installed from /app/kernelbench'",
+          "cd /app/KernelBench && pip install -e .", # Install kernelbench from /app/kernelbench
+          "echo 'KernelBench installed from /app/KernelBench'",
       )
 )
 

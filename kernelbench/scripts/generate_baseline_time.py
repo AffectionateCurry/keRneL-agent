@@ -1,14 +1,14 @@
 import torch
 import numpy as np
-from kernelbench.src.eval import (
+from KernelBench.src.eval import (
     load_original_model_and_inputs,
     time_execution_with_cuda_event,
     get_timing_stats,
     set_seed,
     fetch_ref_arch_from_problem_id,
 )
-from kernelbench.src.dataset import construct_problem_dataset_from_problem_dir
-from kernelbench.src.utils import read_file
+from KernelBench.src.dataset import construct_problem_dataset_from_problem_dir
+from KernelBench.src.utils import read_file
 import os
 import json
 from tqdm import tqdm

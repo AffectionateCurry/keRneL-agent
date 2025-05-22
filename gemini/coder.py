@@ -2,7 +2,7 @@
 import os
 import openai
 # Corrected import: extract_first_code is in kernelbench.src.utils
-from kernelbench.src.utils import extract_first_code 
+from KernelBench.src.utils import extract_first_code 
 import logging
 
 logger = logging.getLogger(__name__)
