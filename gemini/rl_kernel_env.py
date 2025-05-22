@@ -210,7 +210,7 @@ class KernelBenchRLEnv(gym.Env):
                 original_model_src=self.original_ref_src,
                 custom_model_src=kernel_to_evaluate_src,
                 measure_performance=True, 
-                verbose=self.verbose_eval,
+                verbose= True,
                 num_correct_trials=self.num_correct_trials_eval,
                 num_perf_trials=self.num_perf_trials_eval,
                 build_dir=unique_build_dir,

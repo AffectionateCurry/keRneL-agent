@@ -1,3 +1,24 @@
+
+
+# --- BEGIN FIX ---
+import sys
+from pathlib import Path
+
+# 1) Locate key directories
+_current_file_dir  = Path(__file__).parent.resolve()   # .../keRneL-agent/claude
+_project_root      = _current_file_dir.parent         # .../keRneL-agent
+_kernelbench_dir   = _project_root / "KernelBench"    # .../keRneL-agent/KernelBench
+
+# 2) Insert KernelBench itself first so that `import src.*` → KernelBench/src
+if str(_kernelbench_dir) not in sys.path:
+    sys.path.insert(0, str(_kernelbench_dir))
+
+# 3) Then insert your project root so that fully‐qualified imports still work:
+#    - import KernelBench.src.*
+#    - import claude.*
+if str(_project_root) not in sys.path:
+    sys.path.insert(1, str(_project_root))
+
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
@@ -6,14 +27,23 @@ import os
 import hashlib
 from typing import List, Tuple, Dict, Any, Optional
 from pathlib import Path
+import traceback
 import modal
 
 from KernelBench.src.dataset import construct_kernelbench_dataset
 from KernelBench.src.eval import eval_kernel_against_ref, KernelExecResult
+
+print("eval_kernel_against_ref is →", eval_kernel_against_ref)
+assert callable(eval_kernel_against_ref), (
+    "❌ eval_kernel_against_ref isn’t a function! Your import is still wrong."
+)
+
+
 from KernelBench.src.utils import set_gpu_arch, read_file
+# This is the line that was causing the chain reaction leading to the error:
 from KernelBench.scripts.generate_baseline_time import measure_program_time
 
-from claude.coder import KernelCoder
+from claude.coder import KernelCoder # Assuming KernelCoder is in the same 'claude' directory or project root
 
 class KernelBenchRLEnv(gym.Env):
     """RL Environment for KernelBench optimization with Modal GPU support."""
@@ -218,7 +248,7 @@ class KernelBenchRLEnv(gym.Env):
                 original_model_src=self.ref_src,
                 custom_model_src=kernel_src,
                 measure_performance=True,
-                verbose=False,
+                verbose= True,
                 num_correct_trials=self.num_correct_trials,
                 num_perf_trials=self.num_perf_trials,
                 build_dir=str(build_dir),
@@ -226,6 +256,7 @@ class KernelBenchRLEnv(gym.Env):
             )
             return result
         except Exception as e:
+            traceback.print_exc()    # <— this will dump file/line info
             print(f"Evaluation error: {e}")
             return KernelExecResult(
                 compiled=False,

@@ -67,7 +67,8 @@ grpo_image = (
         "gcc-10",  # For C++ compilation
         "g++-10",  # For C++ compilation
         "clang",   # Often useful for some C++ tools or linters
-        "ninja-build" # For PyTorch C++ extensions (like apex, or custom CUDA kernels in kernelbench)
+        "ninja-build", # For PyTorch C++ extensions (like apex, or custom CUDA kernels in kernelbench)
+        
     )
     .pip_install(
         # --- KernelBench Dependencies (from your original image) ---

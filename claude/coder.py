@@ -1,7 +1,7 @@
 import os
 from typing import Optional
 import openai
-from src.utils import extract_first_code
+from KernelBench.src.utils import extract_first_code
 
 
 class KernelCoder:
@@ -54,6 +54,8 @@ class KernelCoder:
             content = response.choices[0].message.content
             if content:
                 new_kernel = extract_first_code(content, ["python"])
+                if new_kernel is None:
+                    print("🚨 extract_first_code returned None; GPT content was:", content)
                 if new_kernel:
                     return new_kernel
             
@@ -74,5 +76,11 @@ Current Kernel:
 {kernel_src}
 Optimization Suggestion:
 "{suggestion}"
+
+**IMPORTANT**:  
+– Wrap your new kernel inside a PyTorch `nn.Module` subclass named `ModelNew`.  
+– Also define the helper functions `get_init_inputs()` and `get_inputs()` in the same module, mirroring the interface of the original `Model`.  
+– Do not output anything else (no commentary, no text outside of the code block).
+
 Updated Python module with optimized kernel:
-"""
+```python"""
