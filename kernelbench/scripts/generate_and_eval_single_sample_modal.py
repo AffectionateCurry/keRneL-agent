@@ -178,6 +178,8 @@ def main(config: EvalConfig):
     
 
 
+
+    # ADD NEW PROMPT HERE
     custom_cuda_prompt = prompt_generate_custom_cuda_from_prompt_template(ref_arch_src)
     if config.log_prompt:
         with open(os.path.join(config.logdir, f"prompt_level_{config.level}_problem_{config.problem_id}.txt"), "w") as f:

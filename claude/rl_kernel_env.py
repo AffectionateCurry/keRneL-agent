@@ -173,6 +173,8 @@ class KernelBenchRLEnv(gym.Env):
         self.step_count += 1
         
         print(f"Step {self.step_count}: Applying suggestion: {action[:50]}...")
+
+        print("🔍 Suggestion passed to GPT-4o:", action)
         
         # Generate new kernel using GPT-4o
         new_kernel = self.kernel_coder.generate_kernel(

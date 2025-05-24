@@ -19,7 +19,7 @@ from claude.coder import KernelCoder
 logger = logging.getLogger(__name__)
 
 # Modal configuration
-TRAINING_GPU_CONFIG = "a100:2"
+TRAINING_GPU_CONFIG = "H100:2"
 SINGLE_GPU_CONFIG = "a10g:1"
 
 APP_NAME = "example-axolotl"
@@ -27,29 +27,7 @@ ALLOW_WANDB = os.environ.get("ALLOW_WANDB", "false").lower() == "true"
 
 
 # Create our own image with necessary dependencies
-""" grpo_image = (
-    axolotl_image
-    .pip_install(
-        "transformers",
-        "trl>=0.17.0",
-        "datasets",
-        "torch==2.5.0",
-        "openai",
-        "gymnasium",
-        "together",
-        "google-generativeai",
-        "pytest",
-        "ninja",
-        "utils",
-        "python-dotenv",
-        "tqdm",
-        "anthropic",
-        "numpy",
-        "packaging",
-        "pydra_config",
-        "deepspeed==0.14.4"
-    )
-)  """
+
 
 cuda_version = "12.4.0" # For torch 2.5.0, CUDA 12.1+ is typical. 12.4 is very new.
                          # Consider CUDA 12.1 or 12.2 for broader compatibility if 12.4 causes issues.
@@ -99,7 +77,8 @@ grpo_image = (
         "hf-transfer",         # For faster HF downloads
         "wandb",               # If you use it for logging
         "gymnasium",           # For KernelBenchRLEnv
-        "peft>=0.10.0",        # Often a dependency for TRL/Axolotl for LoRA etc.
+        "peft>=0.10.0", 
+        "hf_xet",       # Often a dependency for TRL/Axolotl for LoRA etc.
                               # Example: "peft==0.10.0"
         # Ensure all versions are compatible. A good starting point:
         # "torch==2.5.0", (already there)
@@ -111,6 +90,7 @@ grpo_image = (
         # "deepspeed==0.14.4", (already there)
     )
     # Set environment variables (similar to axolotl_image)
+    
     .env(
         dict(
             HUGGINGFACE_HUB_CACHE="/persistent_hf_cache", # Use a clean, volume-mounted path
@@ -171,8 +151,8 @@ def train_grpo(
     gamma: float = 0.4,
     max_training_steps: int = 100,
     save_steps: int = 20,
-    qwen_max_new_tokens: int = 256,
-    qwen_temperature: float = 0.7,
+    qwen_max_new_tokens: int = 8192,
+    qwen_temperature: float = 1.0,
     qwen_top_p: float = 0.9,
     max_prompt_length: int = 1536,
     output_dir: str = "/runs/grpo_kernel_output",
@@ -344,17 +324,41 @@ def train_grpo(
         
         # Prepare data for GRPO
         all_queries = []
-        all_responses = []
+        all_responses = [] # This will now store the actionable suggestions
+        all_chains_of_thought = [] # Optional: if you want to store CoT for logging/analysis
         all_rewards = []
         
         for traj in trajectories:
             all_queries.extend(traj["queries"])
-            all_responses.extend(traj["responses"])
+            # Ensure the key matches what KernelBenchGRPOEnv.generate_trajectory returns
+            if "responses_for_grpo" in traj:
+                all_responses.extend(traj["responses_for_grpo"]) # Corrected line
+            elif "responses" in traj: # Fallback for safety or if you have mixed old/new data
+                print("Warning: 'responses_for_grpo' key not found in trajectory, falling back to 'responses'. Ensure KernelBenchGRPOEnv is updated.")
+                all_responses.extend(traj["responses"])
+            else:
+                print(f"Error: Neither 'responses_for_grpo' nor 'responses' key found in trajectory object: {traj.keys()}")
+                # Decide how to handle this - skip trajectory, raise error, etc.
+                # For now, let's assume it might lead to an empty list for this trajectory's responses.
+            
+            if "chains_of_thought" in traj: # Optional: Store CoT
+                all_chains_of_thought.extend(traj["chains_of_thought"])
+            
             all_rewards.extend(traj["rewards"])
+        
+        # Save trajectories for debugging - this will now include chains_of_thought
+        if step % config["save_steps"] == 0:
+            traj_path = output_dir / f"trajectories_step_{step}.json"
+            # The `trajectories` object itself already has the new structure, so this dump is fine.
+            with open(traj_path, "w") as f:
+                json.dump(trajectories, f, indent=2)
         
         # Create dataset for this step
         step_data = []
+        # The zip will now correctly iterate over the actionable responses
         for q, r, reward in zip(all_queries, all_responses, all_rewards):
+            # ... rest of the data preparation logic remains the same
+            # as `r` will now correctly be the actionable suggestion string.
             query_tokens = tokenizer(
                 q,
                 truncation=True,
@@ -363,16 +367,16 @@ def train_grpo(
             )["input_ids"].squeeze(0)
             
             response_tokens = tokenizer(
-                r,
+                r, # 'r' is now the actionable suggestion
                 truncation=True,
-                max_length=config["qwen_max_new_tokens"],
+                max_length=config["qwen_max_new_tokens"], # Ensure this length is suitable for suggestions, not CoT + suggestion
                 return_tensors="pt"
             )["input_ids"].squeeze(0)
             
             step_data.append({
                 "input_ids": query_tokens,
                 "attention_mask": torch.ones_like(query_tokens),
-                "labels": response_tokens,
+                "labels": response_tokens, # These are the "completions" for GRPOTrainer
                 "reward": torch.tensor(reward, dtype=torch.float32)
             })
         
