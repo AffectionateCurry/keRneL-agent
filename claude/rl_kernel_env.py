@@ -133,13 +133,21 @@ class KernelBenchRLEnv(gym.Env):
         self.baseline_time = -1.0
         self.problem_name = None
     
-    def reset(self, seed: Optional[int] = None, options: Optional[Dict] = None):
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        options: Optional[Dict] = None,
+        problem_idx: Optional[int] = None,   # 💡 new
+    ):
         """Reset environment for new episode."""
         super().reset(seed=seed)
         
         # Select next problem
-        problem_idx = self.problem_indices[self.current_problem_idx]
-        self.current_problem_idx = (self.current_problem_idx + 1) % len(self.problem_indices)
+        if problem_idx is None:                        # usual round-robin
+            problem_idx = self.problem_indices[self.current_problem_idx]
+            self.current_problem_idx = (self.current_problem_idx + 1) % len(self.problem_indices)
+        else:                                          # fixed by caller
+            assert 0 <= problem_idx < len(self.dataset), "invalid problem_idx"
         
         # Load problem
         problem_path = self.dataset[problem_idx]

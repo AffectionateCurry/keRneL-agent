@@ -49,12 +49,16 @@ grpo_image = (
         
     )
     .pip_install(
+        "packaging",
+    )
+    .pip_install(
         # --- KernelBench Dependencies (from your original image) ---
         "anthropic",
         "numpy",        # Pin to a specific version if you encounter issues
         "openai",
         "packaging",
         "pydra_config",
+        
         "torch==2.5.0", # Your chosen torch version
         "tqdm",
         "datasets",     # Pin to a version compatible with transformers/trl
@@ -88,6 +92,9 @@ grpo_image = (
         # "peft==0.11.1",
         # "trl==0.9.4",
         # "deepspeed==0.14.4", (already there)
+    )
+    .pip_install (
+        "flash-attn>=2.0.0", 
     )
     # Set environment variables (similar to axolotl_image)
     
@@ -146,18 +153,21 @@ def train_grpo(
     batch_size: int = 16,
     mini_batch_size: int = 4,
     gradient_accumulation_steps: int = 2,
-    ppo_epochs: int = 2,
+    ppo_epochs: int = 4,
+    trajectories_per_prompt: int = 16,
     learning_rate: float = 1e-5,
     gamma: float = 0.4,
     max_training_steps: int = 100,
     save_steps: int = 20,
-    qwen_max_new_tokens: int = 8192,
+    qwen_max_new_tokens: int = 2048,
     qwen_temperature: float = 1.0,
     qwen_top_p: float = 0.9,
     max_prompt_length: int = 1536,
     output_dir: str = "/runs/grpo_kernel_output",
     logging_dir: str = "/runs/grpo_kernel_logs",
     deepspeed_config: str = None,
+    
+
 ):
     """Main GRPO training function for Modal."""
     
@@ -209,8 +219,10 @@ def train_grpo(
     model = AutoModelForCausalLM.from_pretrained(
         config["model_name"],
         torch_dtype=torch.float16 if torch.cuda.is_available() else torch.float32,
+        attn_implementation="flash_attention_2",
         device_map="auto",
         trust_remote_code=True
+        
     )
     
     ref_model = create_reference_model(model)
@@ -229,6 +241,7 @@ def train_grpo(
         "num_perf_trials": config["num_perf_trials"],
         "modal_gpu_config": SINGLE_GPU_CONFIG,
         "cache_dir": str(output_dir / "kernel_cache"),
+        "trajectories_per_prompt": trajectories_per_prompt,
     }
     
     grpo_env = KernelBenchGRPOEnv(
@@ -238,6 +251,7 @@ def train_grpo(
             "temperature": config["qwen_temperature"],
             "top_p": config["qwen_top_p"],
             "do_sample": config["qwen_temperature"] > 0.0,
+            "repetition_penalty": 1.1,
         }
     )
     
@@ -299,6 +313,7 @@ def train_grpo(
         # ref_model=ref_model,
         args=grpo_config,
         processing_class=tokenizer,
+        group_column="group_id",
         reward_funcs=[reward_passthrough]
 
     )
